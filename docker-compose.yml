@@ -1,0 +1,112 @@
+# Docker Compose 파일 포맷의 버전을 지정합니다.
+version: '3.8'
+services:
+  config-service:
+    build: ./config-service
+    container_name: config-service
+    networks:
+      - msa-network
+    ports:
+      - "8888:8888"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://config-service:8888/actuator/health"]
+      interval: 15s #15초마다 한번씩 체크
+      timeout: 5s # 5초 안에 완료되어야 한다.
+      retries: 3 # 3번까지 재시도 하기
+      start_period: 30s # 컨테이너 시작 후 60초 동안은 잠깐 대기 (health check를 실패해도 무시)
+    restart: always # 컨테이너가 모종의 이유로 중지되면 무조건 재시작 시도.
+
+
+  discovery-service:
+    build: ./discovery-service
+    container_name: discovery-service
+    networks:
+      - msa-network
+    ports:
+      - "8761:8761"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://discovery-service:8761" ]
+      interval: 15s #15초마다 한번씩 체크
+      timeout: 5s # 5초 안에 완료되어야 한다.
+      retries: 3 # 3번까지 재시도 하기
+      start_period: 30s # 컨테이너 시작 후 60초 동안은 잠깐 대기 (health check를 실패해도 무시)
+    restart: always # 컨테이너가 모종의 이유로 중지되면 무조건 재시작 시도.
+
+  gateway-service:
+    build: ./gateway-service
+    container_name: gateway-service
+    networks:
+      - msa-network
+    ports:
+      - "8000:8000"
+    depends_on:
+      # gateway는 discovery와 config가 건강해야지만 컨테이너가 시작됩니다.
+      discovery-service:
+        condition: service_healthy
+      config-service:
+        condition: service_healthy
+    restart: always
+
+  user-service:
+    build: ./user-service
+    container_name: user-service
+    networks:
+      - msa-network
+    depends_on:
+      # gateway는 discovery와 config가 건강해야지만 컨테이너가 시작됩니다.
+      discovery-service:
+        condition: service_healthy
+      config-service:
+        condition: service_healthy
+    restart: always
+
+  order-service:
+    build: ./ordering-service
+    container_name: order-service
+    networks:
+      - msa-network
+    depends_on:
+      # gateway는 discovery와 config가 건강해야지만 컨테이너가 시작됩니다.
+      discovery-service:
+        condition: service_healthy
+      config-service:
+        condition: service_healthy
+    restart: always
+
+  product-service:
+    build: ./product-service
+    container_name: product-service
+    networks:
+      - msa-network
+    depends_on:
+      # gateway는 discovery와 config가 건강해야지만 컨테이너가 시작됩니다.
+      discovery-service:
+        condition: service_healthy
+      config-service:
+        condition: service_healthy
+    restart: always
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    networks:
+      - msa-network
+  mysql-db: # 두번째 서비스 이름은 db야.
+    image: mysql:8 # 빌드하지 않고 미리 준비된 이미지를 사용하겠다.
+    ports:
+      - "3316:3306"
+    environment: # mysql 컨테이너에 적용할 환경 변수 설정
+      MYSQL_ROOT_PASSWORD: mysql
+      MYSQL_DATABASE: orderservice
+    volumes: # 볼륨: 컨테이너가 사용하는 데이터 저장소, 컨테이너가 삭제되거나 재시작하더라도 데이터가 보존.
+      - db-data:/var/lib/mysql
+
+# 서비스들이 연결될 Docker 네트워크를 정의할 수 있습니다.
+# 동일한 호스트 내에서 서로 통신할 수 있도록 해주는 Docker의 네트워크 드라이버.
+networks:
+  msa-network:
+    driver: bridge
+
+volumes:         # 👈 이 부분 추가!
+  db-data:
