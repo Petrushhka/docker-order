@@ -4,7 +4,7 @@ services:
   config-service:
     image: 084375569760.dkr.ecr.ap-northeast-2.amazonaws.com/config-service:latest
     volumes:
-      - /application-dev.yml:/config-dev/application-dev.yml
+      - /application-dev.yml:/app/config-dev/application-dev.yml
     environment:
       SPRING_PROFILES_ACTIVE: dev
       SPRING_CONFIG-ADDITIONAL_LOCATION: /config-dev/
