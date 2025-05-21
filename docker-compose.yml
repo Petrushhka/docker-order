@@ -6,6 +6,7 @@ services:
     volumes:
       - /application-dev.yml:/config-dev/application-dev.yml
     environment:
+      SPRING_PROFILES_ACTIVE: dev
       SPRING_CONFIG-ADDITIONAL_LOCATION: /config-dev/
     container_name: config-service
     networks:
