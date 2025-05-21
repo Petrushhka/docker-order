@@ -3,6 +3,8 @@ version: '3.8'
 services:
   config-service:
     image: 084375569760.dkr.ecr.ap-northeast-2.amazonaws.com/config-service:latest
+    volumes:
+      - /application-dev.yml:/app/config-service/src/main/resources/application-dev.yml
     container_name: config-service
     networks:
       - msa-network
