@@ -8,12 +8,6 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: dev
       SPRING_CONFIG_ADDITIONAL_LOCATION: /app/config-dev/
-      GITHUB_URL: ${GITHUB_URL}
-      USERNAME: ${GITHUB_USERNAME}
-      TOKEN: ${GITHUB_TOKEN}
-    env_file:
-      - .env
-
     container_name: config-service
     networks:
       - msa-network
